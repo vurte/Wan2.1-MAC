@@ -619,10 +619,10 @@ def _video_vae(pretrained_path=None, z_dim=None, device='cpu', **kwargs):
 class WanVAE:
 
     def __init__(self,
-                 z_dim=16,
-                 vae_pth='cache/vae_step_411000.pth',
-                 dtype=torch.float,
-                 device="cuda"):
+             z_dim=16,
+             vae_pth='cache/vae_step_411000.pth',
+             dtype=torch.float,
+             device="mps" if torch.backends.mps.is_available() else "cpu"):
         self.dtype = dtype
         self.device = device
 

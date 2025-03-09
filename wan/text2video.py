@@ -57,7 +57,7 @@ class WanT2V:
             t5_cpu (`bool`, *optional*, defaults to False):
                 Whether to place T5 model on CPU. Only works without t5_fsdp.
         """
-        self.device = torch.device(f"cuda:{device_id}")
+        self.device = torch.device("cpu")
         self.config = config
         self.rank = rank
         self.t5_cpu = t5_cpu
@@ -77,11 +77,12 @@ class WanT2V:
         self.vae_stride = config.vae_stride
         self.patch_size = config.patch_size
         self.vae = WanVAE(
+            z_dim=16,
             vae_pth=os.path.join(checkpoint_dir, config.vae_checkpoint),
+            dtype=config.param_dtype,
             device=self.device)
-
         logging.info(f"Creating WanModel from {checkpoint_dir}")
-        self.model = WanModel.from_pretrained(checkpoint_dir)
+        self.model = WanModel.from_pretrained(checkpoint_dir).to(self.device, dtype=torch.bfloat16)
         self.model.eval().requires_grad_(False)
 
         if use_usp:
@@ -252,7 +253,7 @@ class WanT2V:
             x0 = latents
             if offload_model:
                 self.model.cpu()
-                torch.cuda.empty_cache()
+                #torch.cuda.empty_cache()
             if self.rank == 0:
                 videos = self.vae.decode(x0)
 
@@ -260,7 +261,7 @@ class WanT2V:
         del sample_scheduler
         if offload_model:
             gc.collect()
-            torch.cuda.synchronize()
+            #torch.cuda.synchronize()
         if dist.is_initialized():
             dist.barrier()
 
