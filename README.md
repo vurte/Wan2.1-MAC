@@ -36,6 +36,43 @@ If your work has improved **Wan2.1** and you would like more people to see it, p
 - [TeaCache](https://github.com/ali-vilab/TeaCache) now supports **Wan2.1** acceleration, capable of increasing speed by approximately 2x. Feel free to give it a try!
 - [DiffSynth-Studio](https://github.com/modelscope/DiffSynth-Studio) provides more support for **Wan2.1**, including video-to-video, FP8 quantization, VRAM optimization, LoRA training, and more. Please refer to [their examples](https://github.com/modelscope/DiffSynth-Studio/tree/main/examples/wanvideo).
 
+## Wan2.1-MAC: CPU/MPS Support for macOS
+
+This fork (Wan2.1-MAC) adds support for running Wan2.1 on macOS with CPU or MPS (Metal Performance Shaders) using bfloat16 precision. It removes the dependency on flash_attention, which requires CUDA, making it compatible with Apple Silicon (e.g., M4 Max). Visit the repository at [https://github.com/vurte/Wan2.1-MAC](https://github.com/vurte/Wan2.1-MAC).
+
+- CPU/MPS Support: Modified the pipeline to run on CPU or MPS instead of CUDA.
+- bfloat16 Precision: Adjusted the pipeline to use bfloat16 for reduced memory usage.
+- Removed flash_attention: Replaced CUDA-dependent flash_attention with PyTorch's scaled_dot_product_attention for CPU/MPS compatibility.
+- Updated Dependencies: Removed flash_attn from requirements.txt.
+
+This fork is specifically designed for macOS with Apple Silicon. Users with CUDA-capable GPUs should use the original repository [https://github.com/Wan-Video/Wan2.1](https://github.com/Wan-Video/Wan2.1).
+
+### Installation for macOS
+```sh
+git clone https://github.com/vurte/Wan2.1-MAC.git
+cd Wan2.1-MAC
+pip install -r requirements.txt  # Ensure torch >= 2.4.0 with MPS support
+```
+
+### Model Download
+```sh
+pip install "huggingface_hub[cli]"
+huggingface-cli download Wan-AI/Wan2.1-T2V-14B --local-dir ./Wan2.1-T2V-14B
+```
+
+### Run Text-to-Video Generation on macOS
+```sh
+python generate.py --task t2v-14B --size 480*832 --frame_num 8 --sample_steps 20 --ckpt_dir ./Wan2.1-T2V-14B --offload_model True --t5_cpu --prompt "A sunset over the mountains"
+```
+
+> 💡 Note: The --offload_model True and --t5_cpu options help reduce memory usage on macOS. Adjust --size, --frame_num, and --sample_steps based on your system's capabilities. For better performance, enable MPS by modifying text2video.py to use self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu").
+>
+> To check MPS availability, run: python -c 'import torch; print(torch.backends.mps.is_available())'
+
+### Limitations
+- Performance: Running on CPU/MPS is slower than CUDA. Consider enabling MPS (which may reduce generation time by up to 50% compared to CPU on compatible systems) or using a CUDA-capable GPU for faster generation. MPS requires macOS 12.3+ and Apple Silicon.
+- Generation time: CPU processing may take several hours depending on system performance (e.g., 2-3 hours for 8 frames at 480*832 resolution).
+- Padding Masks: The attention function does not support k_lens for padding masks, which might affect some sequences. For global attention (window_size=(-1, -1)), this is not an issue.
 
 ## 📑 Todo List
 - Wan2.1 Text-to-Video
@@ -62,6 +99,8 @@ Clone the repo:
 git clone https://github.com/Wan-Video/Wan2.1.git
 cd Wan2.1
 ```
+
+> 💡 Note for macOS Users: For CPU/MPS support on macOS (e.g., Apple Silicon), use the Wan2.1-MAC fork. See the Wan2.1-MAC: CPU/MPS Support for macOS section for details.
 
 Install dependencies:
 ```sh
